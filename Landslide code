@@ -1,0 +1,231 @@
+include <Wire.h>
+#include <SoftwareSerial.h>
+#include <I2Cdev.h>
+#include "MPU6050.h"
+
+MPU6050 mpu;
+
+// Pin Definitions
+int soilPin = A0;        // Soil Moisture sensor
+int rainPin = A1;        // Rain sensor
+int vibrationPin = A2;   // Vibration sensor (analog piezo)
+int piezoPin = A3;       // Piezometer (water pressure)
+int buzzerPin = 8;       // Buzzer pin
+int tiltThreshold = 2000;  // Adjust after calibration
+
+// GSM Module Pins (for SIM800L)
+SoftwareSerial gsm(7, 6); // RX, TX  → Connect GSM TX → 7, GSM RX → 6
+
+// Thresholds (adjust after testing your sensors)
+int soilThreshold = 500;      // Example: Wet soil if > 500
+int rainThreshold = 400;      // Heavy rain if > 400
+int vibrationThreshold = 600; // Strong vibration if > 600
+int piezoThreshold = 500;     // High water pressure if > 500
+
+void setup() {
+  Serial.begin(9600);
+  gsm.begin(9600);
+  
+  Wire.begin();
+  mpu.initialize();
+
+  pinMode(buzzerPin, OUTPUT);
+
+  Serial.println("Smart Landslide Monitor Starting...");
+
+  if (mpu.testConnection()) {
+    Serial.println("MPU6050 connected successfully!");
+  } else {
+    Serial.println("MPU6050 connection failed!");
+  }
+
+  gsm.println("AT");
+  delay(500);
+  gsm.println("AT+CMGF=1"); // SMS text mode
+  delay(500);
+}
+
+void loop() {
+  // Read sensor values
+  int soilValue = analogRead(soilPin);
+  int rainValue = analogRead(rainPin);
+  int vibrationValue = analogRead(vibrationPin);
+  int piezoValue = analogRead(piezoPin);
+
+  // MPU6050 acceleration values
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+
+  // Print all sensor values for debugging
+  Serial.print("Soil: "); Serial.println(soilValue);
+  Serial.print("Rain: "); Serial.println(rainValue);
+  Serial.print("Vibration: "); Serial.println(vibrationValue);
+  Serial.print("Piezo: "); Serial.println(piezoValue);
+  Serial.print("Tilt ax: "); Serial.println(ax);
+  Serial.println("-----------------------");
+
+  // Risk detection logic
+  bool risk = false;
+  String alertMsg = "Landslide Risk Detected: ";
+
+  if (soilValue > soilThreshold) { 
+    alertMsg += "Wet Soil "; 
+    risk = true; 
+  }
+  if (rainValue > rainThreshold) { 
+    alertMsg += "Heavy Rain "; 
+    risk = true; 
+  }
+  if (vibrationValue > vibrationThreshold) { 
+    alertMsg += "Ground Vibration "; 
+    risk = true; 
+  }
+  if (piezoValue > piezoThreshold) { 
+    alertMsg += "High Water Pressure "; 
+    risk = true; 
+  }
+  if (abs(ax) > tiltThreshold) { 
+    alertMsg += "Slope Movement "; 
+    risk = true; 
+  }
+
+  // Action if risk is detected
+  if (risk) {
+    digitalWrite(buzzerPin, HIGH);
+    Serial.println(alertMsg);
+    sendSMS(alertMsg);
+  } else {
+    digitalWrite(buzzerPin, LOW);
+    Serial.println("Conditions Normal");
+  }
+
+  delay(3000);
+}
+
+void sendSMS(String msg) {
+while (gsm.available()) gsm.read();
+
+  gsm.println("AT+CMGF=1"); // Ensure SMS mode
+  delay(500);
+  gsm.println("AT+CMGS=\"+916386892539\""); // Replace with your phone number
+  delay(500);
+  gsm.print(msg);
+  delay(500);
+  gsm.write(26); // CTRL+Z to send SMS
+  delay(3000);
+}include <Wire.h>
+#include <SoftwareSerial.h>
+#include <I2Cdev.h>
+#include "MPU6050.h"
+
+MPU6050 mpu;
+
+// Pin Definitions
+int soilPin = A0;        // Soil Moisture sensor
+int rainPin = A1;        // Rain sensor
+int vibrationPin = A2;   // Vibration sensor (analog piezo)
+int piezoPin = A3;       // Piezometer (water pressure)
+int buzzerPin = 8;       // Buzzer pin
+int tiltThreshold = 2000;  // Adjust after calibration
+
+// GSM Module Pins (for SIM800L)
+SoftwareSerial gsm(7, 6); // RX, TX  → Connect GSM TX → 7, GSM RX → 6
+
+// Thresholds (adjust after testing your sensors)
+int soilThreshold = 500;      // Example: Wet soil if > 500
+int rainThreshold = 400;      // Heavy rain if > 400
+int vibrationThreshold = 600; // Strong vibration if > 600
+int piezoThreshold = 500;     // High water pressure if > 500
+
+void setup() {
+  Serial.begin(9600);
+  gsm.begin(9600);
+  
+  Wire.begin();
+  mpu.initialize();
+
+  pinMode(buzzerPin, OUTPUT);
+
+  Serial.println("Smart Landslide Monitor Starting...");
+
+  if (mpu.testConnection()) {
+    Serial.println("MPU6050 connected successfully!");
+  } else {
+    Serial.println("MPU6050 connection failed!");
+  }
+
+  gsm.println("AT");
+  delay(500);
+  gsm.println("AT+CMGF=1"); // SMS text mode
+  delay(500);
+}
+
+void loop() {
+  // Read sensor values
+  int soilValue = analogRead(soilPin);
+  int rainValue = analogRead(rainPin);
+  int vibrationValue = analogRead(vibrationPin);
+  int piezoValue = analogRead(piezoPin);
+
+  // MPU6050 acceleration values
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+
+  // Print all sensor values for debugging
+  Serial.print("Soil: "); Serial.println(soilValue);
+  Serial.print("Rain: "); Serial.println(rainValue);
+  Serial.print("Vibration: "); Serial.println(vibrationValue);
+  Serial.print("Piezo: "); Serial.println(piezoValue);
+  Serial.print("Tilt ax: "); Serial.println(ax);
+  Serial.println("-----------------------");
+
+  // Risk detection logic
+  bool risk = false;
+  String alertMsg = "Landslide Risk Detected: ";
+
+  if (soilValue > soilThreshold) { 
+    alertMsg += "Wet Soil "; 
+    risk = true; 
+  }
+  if (rainValue > rainThreshold) { 
+    alertMsg += "Heavy Rain "; 
+    risk = true; 
+  }
+  if (vibrationValue > vibrationThreshold) { 
+    alertMsg += "Ground Vibration "; 
+    risk = true; 
+  }
+  if (piezoValue > piezoThreshold) { 
+    alertMsg += "High Water Pressure "; 
+    risk = true; 
+  }
+  if (abs(ax) > tiltThreshold) { 
+    alertMsg += "Slope Movement "; 
+    risk = true; 
+  }
+
+  // Action if risk is detected
+  if (risk) {
+    digitalWrite(buzzerPin, HIGH);
+    Serial.println(alertMsg);
+    sendSMS(alertMsg);
+  } else {
+    digitalWrite(buzzerPin, LOW);
+    Serial.println("Conditions Normal");
+  }
+
+  delay(3000);
+}
+
+void sendSMS(String msg) {
+while (gsm.available()) gsm.read();
+
+  gsm.println("AT+CMGF=1"); // Ensure SMS mode
+  delay(500);
+  gsm.println("AT+CMGS=\"+916386892539\""); // Replace with your phone number
+  delay(500);
+  gsm.print(msg);
+  delay(500);
+  gsm.write(26); // CTRL+Z to send SMS
+  delay(3000);
+}
